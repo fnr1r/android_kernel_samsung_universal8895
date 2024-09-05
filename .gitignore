@@ -116,3 +116,11 @@ all.config
 # fetched Android config fragments
 android/configs/android-*.cfg
 linux-upstream.sh
+
+# Generated
+net/wireguard/crypto/zinc/chacha20/chacha20-arm64.S
+net/wireguard/crypto/zinc/poly1305/poly1305-arm64.S
+scripts/dtbtool_exynos/dtbtool
+
+# ???
+arch/arm64/boot/dtb.img
