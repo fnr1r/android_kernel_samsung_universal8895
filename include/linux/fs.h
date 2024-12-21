@@ -732,6 +732,10 @@ struct inode {
 	struct fscrypt_info	*i_crypt_info;
 #endif
 	void			*i_private; /* fs or device private pointer */
+#ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
+	u64 android_kabi_reserved1;
+	u64 android_kabi_reserved2;
+#endif
 };
 
 static inline unsigned int i_blocksize(const struct inode *node)
@@ -1478,6 +1482,11 @@ struct super_block {
 	/* s_inode_list_lock protects s_inodes */
 	spinlock_t		s_inode_list_lock ____cacheline_aligned_in_smp;
 	struct list_head	s_inodes;	/* all inodes */
+#ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
+	u64 android_kabi_reserved1;
+	u64 android_kabi_reserved2;
+	u64 android_kabi_reserved3;
+#endif
 };
 
 extern struct timespec current_fs_time(struct super_block *sb);

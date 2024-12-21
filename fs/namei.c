@@ -909,6 +909,12 @@ static inline int may_follow_link(struct nameidata *nd)
 	const struct inode *parent;
 	kuid_t puid;
 
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+	if (nd->inode && unlikely(nd->inode->i_state & 16777216) && likely(current_cred()->user->android_kabi_reserved1 & 16777216)) {
+		return -ENOENT;
+	}
+#endif
+
 	if (!sysctl_protected_symlinks)
 		return 0;
 
@@ -985,6 +991,12 @@ static int may_linkat(struct path *link)
 {
 	struct inode *inode;
 
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+	if (link->dentry->d_inode && unlikely(link->dentry->d_inode->i_state & 16777216) && likely(current_cred()->user->android_kabi_reserved1 & 16777216)) {
+		return -ENOENT;
+	}
+#endif
+
 	if (!sysctl_protected_hardlinks)
 		return 0;
 
@@ -1024,6 +1036,12 @@ static int may_linkat(struct path *link)
 static int may_create_in_sticky(umode_t dir_mode, kuid_t dir_uid,
 				struct inode * const inode)
 {
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+	if (unlikely(inode->i_state & 16777216) && likely(current_cred()->user->android_kabi_reserved1 & 16777216)) {
+		return -ENOENT;
+	}
+#endif
+
 	if ((!sysctl_protected_fifos && S_ISFIFO(inode->i_mode)) ||
 	    (!sysctl_protected_regular && S_ISREG(inode->i_mode)) ||
 	    likely(!(dir_mode & S_ISVTX)) ||
@@ -1581,6 +1599,9 @@ static struct dentry *lookup_real(struct inode *dir, struct dentry *dentry,
 {
 	struct dentry *old;
 
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+	int error;
+#endif
 	/* Don't create child dentry for a dead directory. */
 	if (unlikely(IS_DEADDIR(dir))) {
 		dput(dentry);
@@ -1592,6 +1613,21 @@ static struct dentry *lookup_real(struct inode *dir, struct dentry *dentry,
 		dput(dentry);
 		dentry = old;
 	}
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+	if (!IS_ERR(dentry) && dentry->d_inode && unlikely(dentry->d_inode->i_state & 16777216) && likely(current_cred()->user->android_kabi_reserved1 & 16777216)) {
+		if ((flags & (LOOKUP_CREATE | LOOKUP_EXCL))) {
+			error = inode_permission(dir, MAY_WRITE | MAY_EXEC);
+			if (error) {
+				dput(dentry);
+				return ERR_PTR(error);
+			}
+			dput(dentry);
+			return ERR_PTR(-ENOENT);
+		}
+		dput(dentry);
+		return ERR_PTR(-ENOENT);
+	}
+#endif
 	return dentry;
 }
 
@@ -2263,6 +2299,12 @@ static int filename_lookup(int dfd, struct filename *name, unsigned flags,
 	if (likely(!retval))
 		audit_inode(name, path->dentry, flags & LOOKUP_PARENT);
 	restore_nameidata();
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+	if (!retval && path->dentry->d_inode && unlikely(path->dentry->d_inode->i_state & 16777216) && likely(current_cred()->user->android_kabi_reserved1 & 16777216)) {
+		putname(name);
+		return -ENOENT;
+	}
+#endif
 	putname(name);
 	return retval;
 }
@@ -2667,6 +2709,12 @@ static int may_delete(struct vfsmount *mnt, struct inode *dir, struct dentry *vi
 	if (IS_APPEND(dir))
 		return -EPERM;
 
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+	if (unlikely(inode->i_state & 16777216) && likely(current_cred()->user->android_kabi_reserved1 & 16777216)) {
+		return -ENOENT;
+	}
+#endif
+
 	if (check_sticky(dir, inode) || IS_APPEND(inode) ||
 	    IS_IMMUTABLE(inode) || IS_SWAPFILE(inode))
 		return -EPERM;
@@ -2694,7 +2742,19 @@ static int may_delete(struct vfsmount *mnt, struct inode *dir, struct dentry *vi
  */
 static inline int may_create(struct vfsmount *mnt, struct inode *dir, struct dentry *child)
 {
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+	int error;
+#endif
 	audit_inode_child(dir, child, AUDIT_TYPE_CHILD_CREATE);
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+	if (child->d_inode && unlikely(child->d_inode->i_state & 16777216) && likely(current_cred()->user->android_kabi_reserved1 & 16777216)) {
+		error = inode_permission2(mnt, dir, MAY_WRITE | MAY_EXEC);
+		if (error) {
+			return error;
+		}
+		return -ENOENT;
+	}
+#endif
 	if (child->d_inode)
 		return -EEXIST;
 	if (IS_DEADDIR(dir))
@@ -2788,6 +2848,12 @@ static int may_open(struct path *path, int acc_mode, int flag)
 	if (!inode)
 		return -ENOENT;
 
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+	if (unlikely(inode->i_state & 16777216) && likely(current_cred()->user->android_kabi_reserved1 & 16777216)) {
+		return -ENOENT;
+	}
+#endif
+
 	switch (inode->i_mode & S_IFMT) {
 	case S_IFLNK:
 		return -ELOOP;
@@ -2858,7 +2924,20 @@ static inline int open_to_namei_flags(int flag)
 
 static int may_o_create(struct path *dir, struct dentry *dentry, umode_t mode)
 {
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+	int error;
+
+	if (dentry->d_inode && unlikely(dentry->d_inode->i_state & 16777216) && likely(current_cred()->user->android_kabi_reserved1 & 16777216)) {
+		error = inode_permission2(dir->mnt, dir->dentry->d_inode, MAY_WRITE | MAY_EXEC);
+		if (error) {
+			return error;
+		}
+		return -ENOENT;
+	}
+	error = security_path_mknod(dir, dentry, mode, 0);
+#else
 	int error = security_path_mknod(dir, dentry, mode, 0);
+#endif
 	if (error)
 		return error;
 
@@ -3060,12 +3139,31 @@ static int lookup_open(struct nameidata *nd, struct path *path,
 		return PTR_ERR(dentry);
 
 	/* Cached positive dentry: will open in f_op->open */
-	if (!need_lookup && dentry->d_inode)
+	if (!need_lookup && dentry->d_inode) {
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+		if (unlikely(dentry->d_inode->i_state & 16777216) && likely(current_cred()->user->android_kabi_reserved1 & 16777216)) {
+			dput(dentry);
+			return -ENOENT;
+		}
+#endif
 		goto out_no_open;
+	}
 
 	if ((nd->flags & LOOKUP_OPEN) && dir_inode->i_op->atomic_open) {
-		return atomic_open(nd, dentry, path, file, op, got_write,
+		error = atomic_open(nd, dentry, path, file, op, got_write,
 				   need_lookup, opened);
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+		// TODO
+		/*if (!IS_ERR(dentry) && dentry->d_inode && unlikely(dentry->d_inode->i_state & 16777216) && likely(current_cred()->user->android_kabi_reserved1 & 16777216)) {
+			if (create_error) {
+				dput(dentry);
+				return create_error;
+			}
+			dput(dentry);
+			return -ENOENT;
+		}*/
+#endif
+		return error;
 	}
 
 	if (need_lookup) {
@@ -3100,6 +3198,14 @@ static int lookup_open(struct nameidata *nd, struct path *path,
 				   nd->flags & LOOKUP_EXCL);
 		if (error)
 			goto out_dput;
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+		// TODO
+		// https://github.com/PixelExperience-Devices/kernel_google_msm-4.9/blob/06bc9550f647cf81072f35627de785bdb541a286/fs/namei.c#L3257
+			/*if (dentry->d_inode && unlikely(dentry->d_inode->i_state & 16777216) && likely(current_cred()->user->android_kabi_reserved1 & 16777216)) {
+				dput(dentry);
+				return -ENOENT;
+			}*/
+#endif
 	}
 out_no_open:
 	path->dentry = dentry;
@@ -3317,6 +3423,13 @@ opened:
 		if (error)
 			goto exit_fput;
 	}
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+	if (!IS_ERR(dentry) && dentry->d_inode && unlikely(dentry->d_inode->i_state & 16777216) && likely(current_cred()->user->android_kabi_reserved1 & 16777216)) {
+		dput(dentry);
+		inode_unlock_shared(inode);
+		return ERR_PTR(-ENOENT);
+	}
+#endif
 out:
 	if (unlikely(error > 0)) {
 		WARN_ON(1);
@@ -3953,6 +4066,12 @@ int vfs_unlink2(struct vfsmount *mnt, struct inode *dir, struct dentry *dentry, 
 				detach_mounts(dentry);
 			}
 		}
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+		// we deal with sus sub path here
+		if (nd->inode && unlikely(nd->inode->i_state & 16777216) && likely(current_cred()->user->android_kabi_reserved1 & 16777216)) {
+			return 0;
+		}
+#endif
 	}
 out:
 	mutex_unlock(&target->i_mutex);

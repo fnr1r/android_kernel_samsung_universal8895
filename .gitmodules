@@ -1,4 +1,8 @@
 [submodule "KernelSU"]
     path = "KernelSU"
     url = https://github.com/fnr1r/KernelSU
-    branch = gitignore
+    branch = v0.9.5-susfs
+[submodule "susfs4ksu"]
+    path = susfs4ksu
+    url = https://gitlab.com/simonpunk/susfs4ksu
+    branch = 1.4.2-kernel-4.9

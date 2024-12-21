@@ -134,6 +134,9 @@ static inline int ovl_do_whiteout(struct inode *dir, struct dentry *dentry)
 enum ovl_path_type ovl_path_type(struct dentry *dentry);
 u64 ovl_dentry_version_get(struct dentry *dentry);
 void ovl_dentry_version_inc(struct dentry *dentry);
+#ifdef CONFIG_KSU_SUSFS_SUS_OVERLAYFS
+void ovl_path_lowerdata(struct dentry *dentry, struct path *path);
+#endif
 void ovl_path_upper(struct dentry *dentry, struct path *path);
 void ovl_path_lower(struct dentry *dentry, struct path *path);
 enum ovl_path_type ovl_path_real(struct dentry *dentry, struct path *path);
